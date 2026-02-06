@@ -147,7 +147,7 @@ export function ZKDemo() {
         apiParams.tokenAddress = tokenAddress;
       }
 
-      const response = await fetch("/api/prove", {
+      let response = await fetch("/api/prove", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -158,6 +158,17 @@ export function ZKDemo() {
           params: apiParams,
         }),
       });
+
+      if (response.status === 405) {
+        const qs = new URLSearchParams({
+          rule: selectedRule,
+          walletAddress,
+          params: JSON.stringify(apiParams),
+        });
+        response = await fetch(`/api/prove?${qs.toString()}`, {
+          method: "GET",
+        });
+      }
 
       const contentType = response.headers.get("content-type") || "";
       const rawBody = await response.text();

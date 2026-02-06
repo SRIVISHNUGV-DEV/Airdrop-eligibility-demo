@@ -11,7 +11,7 @@ export default function EligibilityForm() {
     setLoading(true);
     setResult(null);
 
-    const res = await fetch("/api/prove", {
+    let res = await fetch("/api/prove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -20,6 +20,15 @@ export default function EligibilityForm() {
         params: { thresholdBlock: 18000000 }
       })
     });
+
+    if (res.status === 405) {
+      const qs = new URLSearchParams({
+        walletAddress: wallet,
+        rule: "wallet-age",
+        params: JSON.stringify({ thresholdBlock: 18000000 }),
+      });
+      res = await fetch(`/api/prove?${qs.toString()}`, { method: "GET" });
+    }
 
     const data = await res.json();
     setResult(data);

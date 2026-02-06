@@ -22,9 +22,11 @@ const proveSchema = z.object({
   params: z.record(z.string(), z.any()).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function handleProve(
+  ip: string,
+  payload: z.infer<typeof proveSchema>
+) {
   try {
-    const ip = getClientIp(request);
     const { success } = await rateLimit.limit(`prove:${ip}`);
     if (!success) {
       return NextResponse.json(
@@ -33,24 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const contentLength = Number(request.headers.get("content-length") || 0);
-    if (contentLength && contentLength > MAX_BODY_BYTES) {
-      return NextResponse.json(
-        { success: false, error: "Request too large." },
-        { status: 413 }
-      );
-    }
-
-    const body = await request.json();
-    const parsed = proveSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: "Invalid request payload" },
-        { status: 400 }
-      );
-    }
-
-    const { walletAddress, rule, params } = parsed.data;
+    const { walletAddress, rule, params } = payload;
 
     // Validate inputs
     if (!isUiRule(rule)) {
@@ -161,4 +146,56 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (contentLength && contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json(
+      { success: false, error: "Request too large." },
+      { status: 413 }
+    );
+  }
+
+  const parsed = proveSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: "Invalid request payload" },
+      { status: 400 }
+    );
+  }
+
+  return handleProve(getClientIp(request), parsed.data);
+}
+
+export async function GET(request: NextRequest) {
+  const search = request.nextUrl.searchParams;
+  let params: Record<string, unknown> = {};
+
+  try {
+    const rawParams = search.get("params");
+    if (rawParams) {
+      params = JSON.parse(rawParams) as Record<string, unknown>;
+    }
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "Invalid params encoding" },
+      { status: 400 }
+    );
+  }
+
+  const parsed = proveSchema.safeParse({
+    walletAddress: search.get("walletAddress") ?? "",
+    rule: search.get("rule") ?? "",
+    params,
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: "Invalid request payload" },
+      { status: 400 }
+    );
+  }
+
+  return handleProve(getClientIp(request), parsed.data);
 }
