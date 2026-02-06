@@ -1,0 +1,95 @@
+import { NextRequest, NextResponse } from "next/server";
+import { verifyProof } from "zk-eligibility-sdk";
+import { z } from "zod";
+import { rateLimit } from "@/lib/rate-limit";
+
+export const runtime = "nodejs";
+
+const MAX_BODY_BYTES = 64_000;
+
+function getClientIp(request: NextRequest) {
+  const platformIp = request.ip;
+  if (platformIp) return platformIp;
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0]?.trim() || "unknown";
+  return request.headers.get("x-real-ip") || "unknown";
+}
+
+const verifySchema = z.object({
+  rule: z.string(),
+  proof: z.any(),
+  publicSignals: z.any().optional(),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const ip = getClientIp(request);
+    const { success } = await rateLimit.limit(`verify:${ip}`);
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: "Rate limit exceeded. Try again shortly." },
+        { status: 429 }
+      );
+    }
+
+    const contentLength = Number(request.headers.get("content-length") || 0);
+    if (contentLength && contentLength > MAX_BODY_BYTES) {
+      return NextResponse.json(
+        { success: false, error: "Request too large." },
+        { status: 413 }
+      );
+    }
+
+    const body = await request.json();
+    const parsed = verifySchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: "Invalid request payload" },
+        { status: 400 }
+      );
+    }
+
+    const { proof, rule, publicSignals } = parsed.data;
+
+    // Validate proof structure
+    const signals = publicSignals ?? proof?.publicSignals ?? proof?.signals;
+    if (!proof || !signals) {
+      return NextResponse.json(
+        {
+          success: false,
+          verified: false,
+          error: "Invalid proof structure",
+        },
+        { status: 400 }
+      );
+    }
+
+    const verifyResult = await verifyProof(
+      rule,
+      proof.proof ?? proof,
+      signals
+    );
+    const isVerified = verifyResult.isValid === true;
+
+    return NextResponse.json({
+      success: true,
+      verified: isVerified,
+      rule,
+      timestamp: new Date().toISOString(),
+      message: isVerified
+        ? "Proof is cryptographically valid"
+        : "Proof verification failed",
+    });
+  } catch (error) {
+    console.error("[v0] Verification error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        verified: false,
+        error:
+          error instanceof Error ? error.message : "Verification failed",
+      },
+      { status: 500 }
+    );
+  }
+}
