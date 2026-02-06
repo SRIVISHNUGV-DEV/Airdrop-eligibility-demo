@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyProof } from "zk-eligibility-sdk";
 import { z } from "zod";
-import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -24,12 +22,20 @@ const verifySchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const { success } = await rateLimit.limit(`verify:${ip}`);
-    if (!success) {
-      return NextResponse.json(
-        { success: false, error: "Rate limit exceeded. Try again shortly." },
-        { status: 429 }
-      );
+    try {
+      const { getRateLimit } = await import("@/lib/rate-limit");
+      const limiter = getRateLimit();
+      if (limiter) {
+        const { success } = await limiter.limit(`verify:${ip}`);
+        if (!success) {
+          return NextResponse.json(
+            { success: false, error: "Rate limit exceeded. Try again shortly." },
+            { status: 429 }
+          );
+        }
+      }
+    } catch (rateError) {
+      console.error("[v0] Rate-limit initialization error:", rateError);
     }
 
     const contentLength = Number(request.headers.get("content-length") || 0);
@@ -64,6 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { verifyProof } = await import("zk-eligibility-sdk");
     const verifyResult = await verifyProof(
       rule,
       proof.proof ?? proof,

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ZKEligibilitySDK } from "zk-eligibility-sdk";
 import { buildSdkParams, getRuleId, isUiRule, UI_RULES } from "@/lib/zk";
 import { z } from "zod";
-import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -27,12 +25,20 @@ async function handleProve(
   payload: z.infer<typeof proveSchema>
 ) {
   try {
-    const { success } = await rateLimit.limit(`prove:${ip}`);
-    if (!success) {
-      return NextResponse.json(
-        { success: false, error: "Rate limit exceeded. Try again shortly." },
-        { status: 429 }
-      );
+    try {
+      const { getRateLimit } = await import("@/lib/rate-limit");
+      const limiter = getRateLimit();
+      if (limiter) {
+        const { success } = await limiter.limit(`prove:${ip}`);
+        if (!success) {
+          return NextResponse.json(
+            { success: false, error: "Rate limit exceeded. Try again shortly." },
+            { status: 429 }
+          );
+        }
+      }
+    } catch (rateError) {
+      console.error("[v0] Rate-limit initialization error:", rateError);
     }
 
     const { walletAddress, rule, params } = payload;
@@ -87,6 +93,7 @@ async function handleProve(
 
     const ruleId = getRuleId(rule);
     const sdkParams = buildSdkParams(rule, params ?? {});
+    const { ZKEligibilitySDK } = await import("zk-eligibility-sdk");
 
     const result = await ZKEligibilitySDK.prove(
       ruleId,
