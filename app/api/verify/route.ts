@@ -4,6 +4,9 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 64_000;
+const JSON_HEADERS = {
+  "Content-Type": "application/json",
+};
 
 function getClientIp(request: NextRequest) {
   const platformIp = request.ip;
@@ -46,7 +49,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, verified: false, error: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
+
     const parsed = verifySchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -99,4 +111,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      ...JSON_HEADERS,
+      Allow: "POST, OPTIONS",
+    },
+  });
 }

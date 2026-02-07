@@ -5,6 +5,9 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 32_000;
+const JSON_HEADERS = {
+  "Content-Type": "application/json",
+};
 
 function getClientIp(request: NextRequest) {
   const platformIp = request.ip;
@@ -156,23 +159,31 @@ async function handleProve(
 }
 
 export async function POST(request: NextRequest) {
-  const contentLength = Number(request.headers.get("content-length") || 0);
-  if (contentLength && contentLength > MAX_BODY_BYTES) {
-    return NextResponse.json(
-      { success: false, error: "Request too large." },
-      { status: 413 }
-    );
-  }
+  try {
+    const contentLength = Number(request.headers.get("content-length") || 0);
+    if (contentLength && contentLength > MAX_BODY_BYTES) {
+      return NextResponse.json(
+        { success: false, error: "Request too large." },
+        { status: 413 }
+      );
+    }
 
-  const parsed = proveSchema.safeParse(await request.json());
-  if (!parsed.success) {
+    const body = await request.json();
+    const parsed = proveSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: "Invalid request payload" },
+        { status: 400 }
+      );
+    }
+
+    return handleProve(getClientIp(request), parsed.data);
+  } catch {
     return NextResponse.json(
-      { success: false, error: "Invalid request payload" },
+      { success: false, error: "Invalid JSON body" },
       { status: 400 }
     );
   }
-
-  return handleProve(getClientIp(request), parsed.data);
 }
 
 export async function GET(request: NextRequest) {
@@ -205,4 +216,14 @@ export async function GET(request: NextRequest) {
   }
 
   return handleProve(getClientIp(request), parsed.data);
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      ...JSON_HEADERS,
+      Allow: "GET, POST, OPTIONS",
+    },
+  });
 }
