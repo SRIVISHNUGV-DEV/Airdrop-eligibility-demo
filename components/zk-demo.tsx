@@ -184,10 +184,10 @@ export function ZKDemo() {
       if (data.success) {
         setProofResult(data.proof);
         setIsSimulated(data.isSimulated || false);
-        if (data.isValid) {
-          setStatus("success");
-        } else {
-          setStatus("failure");
+        // Proof generation succeeded even when eligibility is false.
+        // Keep this as a completed result state, not an operational failure.
+        setStatus("success");
+        if (!data.isValid) {
           setErrorMessage(
             data.error || "Wallet does not meet eligibility criteria for this rule."
           );
@@ -474,7 +474,7 @@ export function ZKDemo() {
               </div>
             )}
 
-            {status === "failure" && (
+            {status === "failure" && !proofResult && (
               <div className="mt-6 p-4 bg-destructive/10 rounded-xl border border-destructive/20">
                 <div className="flex items-center gap-2 text-destructive">
                   <XCircle className="w-5 h-5" />
