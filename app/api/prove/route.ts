@@ -98,11 +98,26 @@ async function handleProve(
     const sdkParams = buildSdkParams(rule, params ?? {});
     const { ZKEligibilitySDK } = await import("zk-eligibility-sdk");
 
-    const result = await ZKEligibilitySDK.prove(
-      ruleId,
-      walletAddress,
-      sdkParams
-    );
+    let lastError: unknown = null;
+    let result: Awaited<ReturnType<typeof ZKEligibilitySDK.prove>> | null = null;
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        result = await ZKEligibilitySDK.prove(ruleId, walletAddress, sdkParams);
+        break;
+      } catch (sdkError) {
+        lastError = sdkError;
+        if (attempt < 3) {
+          await new Promise((resolve) => setTimeout(resolve, 350 * attempt));
+        }
+      }
+    }
+
+    if (!result) {
+      throw lastError instanceof Error
+        ? lastError
+        : new Error("Proof generation failed after retries");
+    }
 
     const hasValidResult = !!result && result.isValid === true;
     let isValid = hasValidResult;
@@ -150,10 +165,9 @@ async function handleProve(
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 503 }
     );
   }
 }
