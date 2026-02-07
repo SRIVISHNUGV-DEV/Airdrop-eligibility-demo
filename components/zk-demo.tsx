@@ -195,7 +195,9 @@ export function ZKDemo() {
       } else {
         setStatus("failure");
         setErrorMessage(
-          data.error || "Wallet does not meet eligibility criteria for this rule."
+          data.reasonCode
+            ? `${data.error || "Proof generation failed"} (${data.reasonCode})`
+            : data.error || "Wallet does not meet eligibility criteria for this rule."
         );
       }
     } catch (error) {

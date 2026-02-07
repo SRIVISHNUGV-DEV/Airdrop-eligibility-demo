@@ -7,10 +7,14 @@ export async function GET() {
   const hasUpstash =
     Boolean(process.env.UPSTASH_REDIS_REST_URL) &&
     Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
+  const commitSha = process.env.VERCEL_GIT_COMMIT_SHA || null;
+  const envName = process.env.VERCEL_ENV || process.env.NODE_ENV || "unknown";
 
   return NextResponse.json(
     {
       ok: true,
+      envName,
+      commitSha,
       env: {
         alchemy: hasAlchemy,
         upstash: hasUpstash,

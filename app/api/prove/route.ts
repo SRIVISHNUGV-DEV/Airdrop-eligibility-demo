@@ -8,6 +8,17 @@ const MAX_BODY_BYTES = 32_000;
 const JSON_HEADERS = {
   "Content-Type": "application/json",
 };
+const NON_ELIGIBLE_REASONS = new Set([
+  "PROOF_OUTPUT_FALSE",
+  "NO_ACTIVITY",
+  "PARAM_OUT_OF_RANGE",
+]);
+const BAD_INPUT_REASONS = new Set(["INVALID_WALLET", "INVALID_PARAMS"]);
+const OPERATIONAL_FAILURE_REASONS = new Set([
+  "RPC_ERROR",
+  "PROOF_GENERATION_FAILED",
+  "INTERNAL_ERROR",
+]);
 
 function getClientIp(request: NextRequest) {
   const platformIp = request.ip;
@@ -119,6 +130,7 @@ async function handleProve(
         : new Error("Proof generation failed after retries");
     }
 
+    const reasonCode = result?.isValid ? undefined : String(result?.reason ?? "");
     const hasValidResult = !!result && result.isValid === true;
     let isValid = hasValidResult;
     let classId: number | undefined;
@@ -141,7 +153,47 @@ async function handleProve(
     }
 
     if (!hasValidResult) {
-      errorMessage = result?.reason || "Proof generation failed";
+      errorMessage = reasonCode || "Proof generation failed";
+    }
+
+    if (!hasValidResult && reasonCode && BAD_INPUT_REASONS.has(reasonCode)) {
+      return NextResponse.json(
+        {
+          success: false,
+          isValid: false,
+          error: errorMessage,
+          reasonCode,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !hasValidResult &&
+      reasonCode &&
+      OPERATIONAL_FAILURE_REASONS.has(reasonCode)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          isValid: false,
+          error: errorMessage,
+          reasonCode,
+        },
+        { status: 503 }
+      );
+    }
+
+    if (!hasValidResult && reasonCode && !NON_ELIGIBLE_REASONS.has(reasonCode)) {
+      return NextResponse.json(
+        {
+          success: false,
+          isValid: false,
+          error: errorMessage || "Proof generation failed",
+          reasonCode,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -149,6 +201,7 @@ async function handleProve(
       isValid,
       isSimulated: false,
       error: errorMessage,
+      reasonCode: hasValidResult ? undefined : reasonCode,
       proof: {
         isValid,
         proof: hasValidResult ? result.proof : null,
