@@ -41,8 +41,13 @@ function circuitDirFromRule(ruleId: string): string {
 
 function getSdkDiagnostics(ruleId: string) {
   try {
-    const entryPath = require.resolve("zk-eligibility-sdk");
-    const distRoot = path.resolve(path.dirname(entryPath), "circuits");
+    const distRoot = path.resolve(
+      process.cwd(),
+      "node_modules",
+      "zk-eligibility-sdk",
+      "dist",
+      "circuits"
+    );
     const ruleDir = circuitDirFromRule(ruleId);
     const lower = ruleDir.toLowerCase();
 
@@ -52,7 +57,7 @@ function getSdkDiagnostics(ruleId: string) {
     const vkeyPath = path.join(distRoot, ruleDir, "verification_key.json");
 
     return {
-      sdkEntryPath: entryPath,
+      sdkDistRoot: distRoot,
       manifestExists: fs.existsSync(manifestPath),
       wasmExists: ruleDir ? fs.existsSync(wasmPath) : false,
       zkeyExists: ruleDir ? fs.existsSync(zkeyPath) : false,
