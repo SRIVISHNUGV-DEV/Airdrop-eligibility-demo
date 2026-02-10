@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildSdkParams, getRuleId, isUiRule, UI_RULES } from "@/lib/zk";
 import { z } from "zod";
+import fs from "fs";
+import path from "path";
 
 export const runtime = "nodejs";
 
@@ -19,6 +21,53 @@ const OPERATIONAL_FAILURE_REASONS = new Set([
   "PROOF_GENERATION_FAILED",
   "INTERNAL_ERROR",
 ]);
+
+function circuitDirFromRule(ruleId: string): string {
+  switch (ruleId) {
+    case "WALLET_AGE":
+      return "walletAge";
+    case "MIN_ACTIVITY":
+      return "minActivity";
+    case "COOLDOWN":
+      return "cooldown";
+    case "TOKEN_HOLD":
+      return "tokenHold";
+    case "ACTIVITY_CLASS":
+      return "activityClass";
+    default:
+      return "";
+  }
+}
+
+function getSdkDiagnostics(ruleId: string) {
+  try {
+    const entryPath = require.resolve("zk-eligibility-sdk");
+    const distRoot = path.resolve(path.dirname(entryPath), "circuits");
+    const ruleDir = circuitDirFromRule(ruleId);
+    const lower = ruleDir.toLowerCase();
+
+    const manifestPath = path.join(distRoot, "manifest.json");
+    const wasmPath = path.join(distRoot, ruleDir, `${lower}_js`, `${lower}.wasm`);
+    const zkeyPath = path.join(distRoot, ruleDir, `${lower}_final.zkey`);
+    const vkeyPath = path.join(distRoot, ruleDir, "verification_key.json");
+
+    return {
+      sdkEntryPath: entryPath,
+      manifestExists: fs.existsSync(manifestPath),
+      wasmExists: ruleDir ? fs.existsSync(wasmPath) : false,
+      zkeyExists: ruleDir ? fs.existsSync(zkeyPath) : false,
+      verificationKeyExists: ruleDir ? fs.existsSync(vkeyPath) : false,
+      zkWorkDir: process.env.ZK_WORK_DIR || null,
+      cwd: process.cwd(),
+    };
+  } catch (error) {
+    return {
+      sdkResolveError: error instanceof Error ? error.message : "unknown",
+      zkWorkDir: process.env.ZK_WORK_DIR || null,
+      cwd: process.cwd(),
+    };
+  }
+}
 
 function getClientIp(request: NextRequest) {
   const platformIp = request.ip;
@@ -177,12 +226,17 @@ async function handleProve(
       reasonCode &&
       OPERATIONAL_FAILURE_REASONS.has(reasonCode)
     ) {
+      const diagnostics =
+        reasonCode === "PROOF_GENERATION_FAILED"
+          ? getSdkDiagnostics(ruleId)
+          : undefined;
       return NextResponse.json(
         {
           success: false,
           isValid: false,
           error: errorMessage,
           reasonCode,
+          diagnostics,
         },
         { status: 503 }
       );
