@@ -105,6 +105,10 @@ async function handleProve(
       );
     }
 
+    if (!process.env.ZK_WORK_DIR) {
+      process.env.ZK_WORK_DIR = "/tmp/zk";
+    }
+
     const ruleId = getRuleId(rule);
     const sdkParams = buildSdkParams(rule, params ?? {});
     const { ZKEligibilitySDK } = await import("zk-eligibility-sdk");
@@ -215,10 +219,17 @@ async function handleProve(
     });
   } catch (error) {
     console.error("[v0] Proof generation error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : (error as { code?: string; error?: { message?: string } })?.error
+            ?.message ||
+          (error as { code?: string })?.code ||
+          "Unknown error";
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: message,
       },
       { status: 503 }
     );
