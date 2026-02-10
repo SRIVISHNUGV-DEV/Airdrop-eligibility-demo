@@ -77,7 +77,7 @@ export function PricingSection() {
               </p>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-foreground">$2.5</span>
+              <span className="text-4xl font-bold text-foreground">$2.5k</span>
               <span className="text-muted-foreground ml-2">one-time</span>
             </div>
             <ul className="space-y-3 mb-8">
