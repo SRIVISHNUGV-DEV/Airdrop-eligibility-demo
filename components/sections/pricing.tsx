@@ -29,7 +29,7 @@ export function PricingSection() {
               </p>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-foreground">$2.5K</span>
+              <span className="text-4xl font-bold text-foreground">$500</span>
               <span className="text-muted-foreground ml-2">one-time</span>
             </div>
             <ul className="space-y-3 mb-8">
@@ -39,15 +39,15 @@ export function PricingSection() {
               </li>
               <li className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Check className="w-4 h-4 text-primary shrink-0" />
-                3 eligibility rules
+                Core eligibility rules
+              </li>
+              <li className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Check className="w-4 h-4 text-primary shrink-0" />
+                SDK + CLI support
               </li>
               <li className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Check className="w-4 h-4 text-primary shrink-0" />
                 Email support
-              </li>
-              <li className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Check className="w-4 h-4 text-primary shrink-0" />
-                Basic analytics
               </li>
             </ul>
             <Button
@@ -77,7 +77,7 @@ export function PricingSection() {
               </p>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-foreground">$10K</span>
+              <span className="text-4xl font-bold text-foreground">$2.5</span>
               <span className="text-muted-foreground ml-2">one-time</span>
             </div>
             <ul className="space-y-3 mb-8">

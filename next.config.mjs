@@ -7,6 +7,16 @@ const nextConfig = {
     unoptimized: true,
   },
   serverExternalPackages: ["zk-eligibility-sdk"],
+  async redirects() {
+    return [
+      {
+        source: "/go",
+        destination:
+          "https://airdrop-eligibility-demo-1-4o2f308e9.vercel.app?_vercel_share=lVEtAdzU5jIDc3A251ypFQTvCp2qQImF",
+        permanent: false,
+      },
+    ]
+  },
   async headers() {
     return [
       {

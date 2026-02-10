@@ -79,13 +79,13 @@ export default function SolutionPage() {
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <span className="text-muted-foreground text-sm">
-                    Merkle tree inclusion proofs for wallet verification
+                    Merkle tree inclusion proofs for onchain state verification
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <span className="text-muted-foreground text-sm">
-                    Nullifier generation to prevent double-claiming
+                    Constraint optimized proof for fast proof generation
                   </span>
                 </li>
               </ul>
@@ -104,25 +104,25 @@ export default function SolutionPage() {
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <span className="text-muted-foreground text-sm">
-                    Client-side proof generation for complete privacy
+                    Client-side proof generation for full data  privacy
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <span className="text-muted-foreground text-sm">
-                    On-chain verifier contracts for trustless validation
+                    Local verification engine for rapid eligibility checks
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <span className="text-muted-foreground text-sm">
-                    EVM-compatible deployment on major L1s and L2s
+                    CLI for automated workflows and testing
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <span className="text-muted-foreground text-sm">
-                    SDK and API for seamless integration
+                    NPM SDK and API for seamless integration
                   </span>
                 </li>
               </ul>
