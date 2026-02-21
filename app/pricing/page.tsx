@@ -18,7 +18,7 @@ const faqs = [
   {
     question: "What eligibility rules are included?",
     answer:
-      "Starter includes Wallet Age, Min Activity, and Cooldown. Growth and Enterprise include Token Hold and Activity Class as well.",
+      "SDK includes Wallet Age, Min Activity, and Cooldown. Growth and Enterprise include Token Hold and Activity Class as well.",
   },
   {
     question: "Is there a free trial?",
@@ -28,7 +28,7 @@ const faqs = [
   {
     question: "How long does integration take?",
     answer:
-      "Most teams integrate within 1-2 weeks using our SDK. Enterprise customers receive dedicated integration support.",
+      "Most teams integrate within 1-2 hours using our SDK. Enterprise customers receive dedicated integration support.",
   },
   {
     question: "What chains do you support?",
